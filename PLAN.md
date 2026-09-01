@@ -26,13 +26,26 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
 - 2026-09-01: **0.4.2 speed baseline.** Vanilla creepers run 0.25 movement speed (9% faster
   than the 0.23 zombie baseline). `MobSpeedTuner` locks creepers to `mobs.creeper-speed`
   (default 0.23, 0 = vanilla) on spawn — every mob now moves at the same 1x pace.
-  RCON-verified live via `attribute ... base get`.
+   RCON-verified live via `attribute ... base get`.
+- 2026-09-01: **0.4.3 playtest fixes + built haven.** Direct fixes from the live playtest:
+  re-entry gate message throttled to 1/5s per player (was spamming); alpha stuck escalation
+  (force re-path at 10s, despawn at 30s, `alpha.stuck-*`); alpha despawns 5 min after its last
+  target goes offline (`alpha.offline-despawn-minutes`); unescaped players respawn at the haven
+  center with a fresh kit (`PlayerRespawnEvent`). `HavenBuilder` flattens the haven at startup —
+  smooth-stone floor, glowstone border ring + center marker, ceiling cleared — so the spawn
+  reads as a clean lit room (`spawn-haven.build/floor/border`). Floor anchors to the spawn
+  column's surface and the surface scan ignores the floor/border materials, so a stale slab
+  from a previous build cannot mask the natural ground (idempotent rebuild). Glow and build are
+  config-gated (`alpha.show-glow`). Scoreboard adds `/panic help` + one-life-per-run lines;
+  `/panic help` is open to all players, admin subcommands check `panic.admin`.
+  RCON-verified live: floor/ring/ceiling/marker at the spawn surface, outside-ring untouched.
 
 Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
 ## Next step
 
-Playtest with real players (Andryo + Pete): spawn-camp fix, creeper pace, tunneling.
+Playtest again with real players (Andryo + Pete) on 0.4.3: gate throttling, alpha stuck
+escalation, respawn safety, and the built haven look/feel.
 Then build-order step 4: RPG stats, corpses, blood moon. Code review of the full polish pass
 is queued on switchboard (task 283f47fa) — apply findings when it lands.
 
