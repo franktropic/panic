@@ -24,6 +24,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
@@ -55,6 +56,7 @@ public final class AlphaManager implements Listener {
 
   private final PanicPlugin plugin;
   private final Map<UUID, Alpha> alphas = new HashMap<>();
+  private final Map<UUID, Long> lastAlphaHit = new HashMap<>();
   private final HordeBudget budget;
   private final Random random = new Random();
   private long lastSpawnTick;
@@ -301,6 +303,35 @@ public final class AlphaManager implements Listener {
     if (ai != null) {
       ai.setBaseValue(value);
     }
+  }
+
+  /** Nearest live alpha within range of the given location, or null. */
+  public Alpha nearestAlphaTo(Location loc, double range) {
+    Alpha best = null;
+    double bestDist = range * range;
+    for (Alpha alpha : alphas.values()) {
+      double d = alpha.zombie.getLocation().distanceSquared(loc);
+      if (d <= bestDist) {
+        bestDist = d;
+        best = alpha;
+      }
+    }
+    return best;
+  }
+
+  @EventHandler
+  public void onEntityDamage(EntityDamageByEntityEvent e) {
+    if (e.getDamager() instanceof Zombie z
+        && e.getEntity() instanceof Player p
+        && z.hasMetadata(META_ALPHA)) {
+      lastAlphaHit.put(p.getUniqueId(), Bukkit.getCurrentTick() + 0L);
+    }
+  }
+
+  /** True once, when the player was last hit by an alpha within the last few seconds. */
+  public boolean consumeAlphaHit(UUID player) {
+    Long t = lastAlphaHit.remove(player);
+    return t != null && Bukkit.getCurrentTick() - t <= 100L;
   }
 
   public Player randomAnchor() {

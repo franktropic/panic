@@ -25,10 +25,23 @@ public final class PanicConfig {
   public final int hordeSize;
   public final int hordeMaxTotal;
   public final int deathKeepsPercent;
+  public final int farRange;
+  public final int midRange;
+  public final int nearRange;
+  public final int heartbeatRange;
+  public final int silenceRange;
+  public final int screamMinSec;
+  public final int screamMaxSec;
+  public final int falseAlarmPercent;
+  public final int falseAlarmMinSec;
+  public final int falseAlarmMaxSec;
 
   public PanicConfig(FileConfiguration c) {
     this.havenSize = c.getInt("spawn-haven.size", 24);
-    this.kit = parseKit(c.getStringList("spawn-haven.kit"));
+    this.kit = new ArrayList<>();
+    for (KitEntry e : parseKitEntries(c.getStringList("spawn-haven.kit"))) {
+      this.kit.add(new ItemStack(e.material(), e.amount()));
+    }
     this.dayLength = c.getInt("day-night.day-length-ticks", 6000);
     this.nightLength = c.getInt("day-night.night-length-ticks", 12000);
     this.alphaType = EntityType.valueOf(c.getString("alpha.type", "ZOMBIE").trim().toUpperCase());
@@ -42,11 +55,27 @@ public final class PanicConfig {
     this.hordeSize = c.getInt("horde.size", 8);
     this.hordeMaxTotal = c.getInt("horde.max-total", 40);
     this.deathKeepsPercent = c.getInt("highscore.death-keeps-percent", 25);
+    this.farRange = Math.max(1, c.getInt("dread.far-range", 80));
+    this.midRange = Math.max(1, Math.min(c.getInt("dread.mid-range", 40), this.farRange));
+    this.nearRange = Math.max(1, Math.min(c.getInt("dread.near-range", 15), this.midRange));
+    this.heartbeatRange =
+        Math.max(1, Math.min(c.getInt("dread.heartbeat-range", 20), this.farRange));
+    this.silenceRange =
+        Math.max(1, Math.min(c.getInt("dread.silence-range", 8), this.heartbeatRange));
+    this.screamMinSec = Math.max(1, c.getInt("dread.scream-min-seconds", 20));
+    this.screamMaxSec = Math.max(this.screamMinSec, c.getInt("dread.scream-max-seconds", 40));
+    this.falseAlarmPercent = Math.min(100, Math.max(0, c.getInt("dread.false-alarm-percent", 25)));
+    this.falseAlarmMinSec = Math.max(1, c.getInt("dread.false-alarm-min-seconds", 60));
+    this.falseAlarmMaxSec =
+        Math.max(this.falseAlarmMinSec, c.getInt("dread.false-alarm-max-seconds", 180));
   }
 
-  /** Parses "ITEM" or "ITEM:qty" strings into stack items; bad entries are skipped. */
-  static List<ItemStack> parseKit(List<String> raw) {
-    List<ItemStack> kit = new ArrayList<>();
+  /** A kit entry before Bukkit ItemStack creation (testable without a server). */
+  public record KitEntry(Material material, int amount) {}
+
+  /** Parses "ITEM" or "ITEM:qty" strings; bad entries are skipped. */
+  static List<KitEntry> parseKitEntries(List<String> raw) {
+    List<KitEntry> entries = new ArrayList<>();
     for (String entry : raw) {
       String[] parts = entry.split(":");
       Material material;
@@ -55,11 +84,16 @@ public final class PanicConfig {
       } catch (IllegalArgumentException e) {
         continue;
       }
-      int amount = parts.length > 1 ? Integer.parseInt(parts[1].trim()) : 1;
+      int amount;
+      try {
+        amount = parts.length > 1 ? Integer.parseInt(parts[1].trim()) : 1;
+      } catch (NumberFormatException e) {
+        continue;
+      }
       if (amount > 0) {
-        kit.add(new ItemStack(material, amount));
+        entries.add(new KitEntry(material, amount));
       }
     }
-    return kit;
+    return entries;
   }
 }

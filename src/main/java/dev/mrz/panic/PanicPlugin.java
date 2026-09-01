@@ -9,8 +9,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Panic — alpha horde roguelike survival. Phase 1: one-way spawn haven, survival high score
- * (sidebar + /top), alphas with hordes, shortened days. See PLAN.md for the full spec.
+ * Panic — alpha horde roguelike survival. Core loop (haven, high score, alphas with hordes,
+ * shortened days) plus the dread pack (proximity warnings, screams, heartbeat, false alarms, fake
+ * cracks). See PLAN.md for the full spec.
  */
 public final class PanicPlugin extends JavaPlugin {
 
@@ -27,6 +28,7 @@ public final class PanicPlugin extends JavaPlugin {
   private DayNightClock clock;
   private AlphaManager alphaManager;
   private ScoreboardService scoreboard;
+  private DreadService dread;
 
   @Override
   public void onEnable() {
@@ -50,6 +52,7 @@ public final class PanicPlugin extends JavaPlugin {
 
     scoreboard = new ScoreboardService();
     alphaManager = new AlphaManager(this);
+    dread = new DreadService(this);
     clock =
         new DayNightClock(
             world,
@@ -96,6 +99,7 @@ public final class PanicPlugin extends JavaPlugin {
 
   private void secondTick() {
     alphaManager.tick();
+    dread.tick();
     for (Player p : getServer().getOnlinePlayers()) {
       UUID uuid = p.getUniqueId();
       scoreboard.update(p, data.runSeconds(uuid), data.getBest(uuid));
@@ -145,6 +149,10 @@ public final class PanicPlugin extends JavaPlugin {
 
   public ScoreboardService scoreboard() {
     return scoreboard;
+  }
+
+  public DreadService dread() {
+    return dread;
   }
 
   public String prefix() {

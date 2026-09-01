@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "dev.mrz"
-version = "0.2.0"
+version = "0.3.0"
 
 java {
     toolchain {
@@ -18,9 +18,12 @@ repositories {
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 
+val paperApi = "io.papermc.paper:paper-api:26.2.build.121-stable"
+
 dependencies {
     // Paper API only for now. NMS: see PLAN.md ("NMS recipe") before adding a full server jar.
-    compileOnly("io.papermc.paper:paper-api:26.2.build.121-stable")
+    compileOnly(paperApi)
+    testImplementation(paperApi)
 
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

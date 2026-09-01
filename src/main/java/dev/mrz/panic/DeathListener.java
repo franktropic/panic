@@ -1,6 +1,7 @@
 package dev.mrz.panic;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,6 +19,10 @@ public final class DeathListener implements Listener {
   @EventHandler
   public void onDeath(PlayerDeathEvent e) {
     Player p = e.getEntity();
+    if (plugin.alphaManager().consumeAlphaHit(p.getUniqueId())) {
+      p.getWorld().playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+      plugin.broadcast(ChatColor.DARK_RED + "The alpha took " + p.getName() + " down.");
+    }
     long start = plugin.data().getRunStart(p.getUniqueId());
     if (start < 0) {
       return;

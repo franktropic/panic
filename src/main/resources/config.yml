@@ -40,3 +40,20 @@ horde:
 highscore:
   # Stat points kept on death, in percent (brief: 25%).
   death-keeps-percent: 25
+
+dread:
+  # Proximity warning distances, blocks (brief: 80 / 40 / 15).
+  far-range: 80
+  mid-range: 40
+  near-range: 15
+  # Heartbeat (warden sound + darkness pulses) inside this range...
+  heartbeat-range: 20
+  # ...but total silence inside this one (brief: sudden silence before the ambush).
+  silence-range: 8
+  # Distant scream cadence, seconds (brief: every 20-40s).
+  scream-min-seconds: 20
+  scream-max-seconds: 40
+  # Chance (0-100) a false-alarm roll fires a warning with no alpha behind it (brief: ~1 in 4).
+  false-alarm-percent: 25
+  false-alarm-min-seconds: 60
+  false-alarm-max-seconds: 180
