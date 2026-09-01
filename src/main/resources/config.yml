@@ -73,3 +73,8 @@ tunnel:
   # Tunnels heal at dawn, but blocks broken in the final N seconds before dawn stay broken so
   # escapes are not walled off (brief).
   dawn-heal-grace-seconds: 30
+
+mobs:
+  # Base movement speed for creepers (vanilla creeper: 0.25, zombie: 0.23). Locked to the zombie
+  # baseline so no mob reads as "fast"; set 0 to leave vanilla as-is.
+  creeper-speed: 0.23

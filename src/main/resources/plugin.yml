@@ -1,5 +1,5 @@
 name: Panic
-version: 0.4.1
+version: 0.4.2
 main: dev.mrz.panic.PanicPlugin
 api-version: '26.2'
 description: Alpha horde roguelike survival - night belongs to the alphas.

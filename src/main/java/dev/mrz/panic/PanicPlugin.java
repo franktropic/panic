@@ -68,6 +68,7 @@ public final class PanicPlugin extends JavaPlugin {
     havenListener = new HavenListener(this);
     getServer().getPluginManager().registerEvents(havenListener, this);
     getServer().getPluginManager().registerEvents(new DeathListener(this), this);
+    getServer().getPluginManager().registerEvents(new MobSpeedTuner(this), this);
     getServer().getPluginManager().registerEvents(alphaManager, this);
 
     getServer().getScheduler().runTaskTimer(this, clock::tick, 1L, 1L);

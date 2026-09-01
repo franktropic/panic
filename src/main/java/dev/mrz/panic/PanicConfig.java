@@ -40,6 +40,7 @@ public final class PanicConfig {
   public final double tunnelVanillaDigSpeed;
   public final int tunnelHealGraceSeconds;
   public final int peaceRadius;
+  public final double creeperSpeed;
 
   public PanicConfig(FileConfiguration c) {
     this.havenSize = c.getInt("spawn-haven.size", 24);
@@ -79,6 +80,7 @@ public final class PanicConfig {
     this.tunnelVanillaDigSpeed =
         Math.max(0.1, Math.min(1.0, c.getDouble("tunnel.vanilla-dig-speed", 0.5)));
     this.tunnelHealGraceSeconds = Math.max(0, c.getInt("tunnel.dawn-heal-grace-seconds", 30));
+    this.creeperSpeed = Math.max(0, c.getDouble("mobs.creeper-speed", 0.23));
   }
 
   /** A kit entry before Bukkit ItemStack creation (testable without a server). */
