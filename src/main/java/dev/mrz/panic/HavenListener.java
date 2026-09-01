@@ -26,14 +26,15 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.util.Vector;
 
 /**
- * The spawn haven: one-way exit, re-entry knockback, no mob damage or hunger inside, no monster
- * spawns, an unbreakable bedrock-to-sky column, basic kit for new players, safe respawn placement.
+ * The spawn haven: the exit starts the run; re-entry (config-gated) is a safe breather where the
+ * run clock pauses; no mob damage or hunger inside, no monster spawns, an unbreakable
+ * bedrock-to-sky column, basic kit for new players, safe respawn placement.
  */
 public final class HavenListener implements Listener {
 
   /**
-   * Re-entry gate message cooldown, ticks (5s) so it cannot spam while a player is held at the
-   * edge.
+   * Gate message cooldown, ticks (5s) so it cannot spam while a player is held at or moving across
+   * the edge.
    */
   private static final long GATE_MESSAGE_COOLDOWN = 100L;
 
@@ -59,8 +60,14 @@ public final class HavenListener implements Listener {
       p.teleport(havenCenter());
       p.sendMessage(plugin.prefix() + "You wake in the haven. The door behind you locks.");
     } else {
+      // They quit mid-run outside the haven; wake them back outside (a quit must not be a free
+      // breather). If they quit while parked inside, the pause ends now.
+      if (plugin.data().isPaused(p.getUniqueId())) {
+        plugin.data().resumeRun(p.getUniqueId());
+      }
       p.teleport(rejoinPoint());
-      p.sendMessage(plugin.prefix() + "The haven is behind you. It will not open again.");
+      p.sendMessage(
+          plugin.prefix() + "You wake outside the haven. The gate is open, if you can get back.");
     }
   }
 
@@ -99,22 +106,39 @@ public final class HavenListener implements Listener {
     if (fromIn == toIn) {
       return;
     }
+    boolean escaped = plugin.data().isEscaped(p.getUniqueId());
+    long now = org.bukkit.Bukkit.getCurrentTick();
     if (!fromIn && toIn) {
-      if (plugin.data().isEscaped(p.getUniqueId())) {
+      if (escaped && !plugin.config().havenReEntry) {
         e.setCancelled(true);
         knockBackToCenter(p, from);
-        long now = org.bukkit.Bukkit.getCurrentTick();
-        Long last = lastGateMessage.get(p.getUniqueId());
-        if (last == null || now - last >= GATE_MESSAGE_COOLDOWN) {
-          lastGateMessage.put(p.getUniqueId(), now);
-          p.sendMessage(plugin.prefix() + "The gate is shut. The haven is behind you.");
-        }
+        gateMessage(p, now, "The gate is shut. The haven is behind you.");
+      } else if (escaped) {
+        plugin.data().pauseRun(p.getUniqueId());
+        gateMessage(p, now, "You slip back through the gate. The clock holds.");
       }
-    } else if (!plugin.data().isEscaped(p.getUniqueId())) {
+    } else if (!escaped) {
       plugin.data().setEscaped(p.getUniqueId(), true);
-      plugin.data().setRunStart(p.getUniqueId(), org.bukkit.Bukkit.getCurrentTick());
+      plugin.data().setRunStart(p.getUniqueId(), now);
       plugin.data().save();
       p.sendMessage(plugin.prefix() + "You step out into the dark. The clock starts.");
+    } else if (plugin.data().getRunStart(p.getUniqueId()) < 0) {
+      // Safety net: escaped but no live run (should not happen — death resets the flag).
+      plugin.data().discardPause(p.getUniqueId());
+      plugin.data().setRunStart(p.getUniqueId(), now);
+      plugin.data().save();
+      p.sendMessage(plugin.prefix() + "You step out into the dark. The clock starts.");
+    } else if (plugin.data().isPaused(p.getUniqueId())) {
+      plugin.data().resumeRun(p.getUniqueId());
+      gateMessage(p, now, "You step back out. The clock picks up.");
+    }
+  }
+
+  private void gateMessage(Player p, long now, String message) {
+    Long last = lastGateMessage.get(p.getUniqueId());
+    if (last == null || now - last >= GATE_MESSAGE_COOLDOWN) {
+      lastGateMessage.put(p.getUniqueId(), now);
+      p.sendMessage(plugin.prefix() + message);
     }
   }
 

@@ -13,6 +13,10 @@ spawn-haven:
   # Ring of soft glow particles just above the border ring, so the safe room reads as warded
   # space from far away (needs build: true to anchor the ring to the floor level).
   aura: true
+  # Let escaped players walk back into the haven: a safe breather where the run clock pauses
+  # while they are inside (quitting mid-pause also holds the clock; rejoining wakes them outside).
+  # false = the classic one-way gate with knockback.
+  re-entry: true
   # Peace ring radius around the haven center, in blocks. While a player is inside the ring, no
   # monsters spawn in it, monsters in it lose their target and catch fire, and alphas will not hunt
   # a player standing in it (no camping the gate).

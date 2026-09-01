@@ -98,8 +98,34 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
      RCON (use `execute if ... run say X` silence as a presence probe); with zero players online
      no chunks stay loaded — a spawned alpha is pruned by `pruneDeadAlphas` within ~30s once its
      temporary chunk load drops (test artifact, not a bug; `forceload add` works and pins it).
-
-Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
+  - 2026-09-01: **0.4.7 haven aura.** Andryo: "ring of aura around the haven so it's obvious":
+    - `HavenAura`: a ring of `AreaEffectCloud`s along the haven border (2b step → 48 clouds),
+      `org.bukkit.Particle.GLOW` (the enum moved to `org.bukkit` in 26.2), radius 0.8, floating 1.0
+      above the border ring, 120s lifetime.
+    - Watchdog every 100t respawns expired or chunk-unload-lost clouds (gated by `isChunkLoaded`);
+      startup purge of stale clouds near the haven (clouds persist in chunks across restarts).
+    - `spawn-haven.aura` config gate (default true), needs `build: true` for a floor anchor.
+      `panic status` now reports `aura=N`.
+    - Verified live: exactly 48 clouds on boot; after `kill @e[type=area_effect_cloud]` the status
+      recovered to `aura=48` within one refresh cycle.
+    - 26.2 note: `AreaEffectCloud.setParticleCount()` is gone (default particle budget only).
+    - 50 tests green (4 new: perimeter count/edge/corners/dedup). Commit `65088b7`.
+  - 2026-09-01: **0.4.8 haven re-entry (go back to the safe haven).** Andryo: "make it so you can
+    go back to safe haven":
+    - Escaped players can now walk back into the haven: a safe breather. The run clock PAUSES while
+      they are inside and RESUMES when they walk out again. Config `spawn-haven.re-entry` (default
+      true); false restores the classic one-way gate with knockback.
+    - `DataStore` pause model: `paused-ticks` persisted per player (accumulates across multiple
+      pauses in a run); the in-flight pause start is memory-only; `runSeconds(uuid, now)` excludes
+      paused time. Death clears the pause and paused-ticks so a dead run's breather cannot eat into
+      the next run's score.
+    - `HavenListener`: out→in (escaped) = pause + "The clock holds."; in→out (escaped) = resume +
+      "The clock picks up." (plus a safety net: escaped without a live run starts a fresh run on
+      exit). Rejoining while parked inside resumes the clock and wakes the player outside — a
+      disconnect is not a free breather.
+    - 6 new clock tests (`DataStorePauseTest`).
+ 
+ Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
 ## Next step
 
@@ -144,9 +170,11 @@ Roguelike survival. Night belongs to alpha mobs: oversized pack leaders that hun
 ## Spawn haven
 
 - Small region, roughly 24x24 blocks. New players start inside with a basic kit.
-- One-way exit: the first outward border crossing sets a persistent `escaped` flag on the player.
-- Flagged players cannot re-enter. Movement back across the border is cancelled with a knockback and a message.
-- Death clears the flag. You respawn in the haven and walk out to start a fresh run.
+- The first outward border crossing sets a persistent `escaped` flag on the player and starts the run.
+- Re-entry (config `re-entry`, default on): escaped players can walk back in — a safe breather. The
+  run clock pauses while they are inside and resumes on exit. With `re-entry: false` the classic
+  one-way gate applies: movement back across the border is cancelled with a knockback and a message.
+- Death clears the flag (and any pause). You respawn in the haven and walk out to start a fresh run.
 - Inside the haven: no mob damage, no hunger drain, no alpha targeting.
 
 ## Alpha mobs

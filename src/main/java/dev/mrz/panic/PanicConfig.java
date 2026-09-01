@@ -49,6 +49,7 @@ public final class PanicConfig {
   public final Material havenFloor;
   public final Material havenBorder;
   public final boolean havenAura;
+  public final boolean havenReEntry;
 
   public PanicConfig(FileConfiguration c) {
     this.havenSize = c.getInt("spawn-haven.size", 24);
@@ -57,6 +58,7 @@ public final class PanicConfig {
     this.havenFloor = parseMaterial(c.getString("spawn-haven.floor"), Material.SMOOTH_STONE);
     this.havenBorder = parseMaterial(c.getString("spawn-haven.border"), Material.GLOWSTONE);
     this.havenAura = c.getBoolean("spawn-haven.aura", true);
+    this.havenReEntry = c.getBoolean("spawn-haven.re-entry", true);
     this.kit = new ArrayList<>();
     for (KitEntry e : parseKitEntries(c.getStringList("spawn-haven.kit"))) {
       this.kit.add(new ItemStack(e.material(), e.amount()));

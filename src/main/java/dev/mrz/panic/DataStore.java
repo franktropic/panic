@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -13,6 +15,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 /**
  * Per-player persistence: escaped flag, run start tick, best score. YAML file in
  * plugins/Panic/data.yml. The ever-joined set is derived from the file's player keys.
+ *
+ * <p>Run clock pausing: while an escaped player is inside the haven the clock is paused. Cumulative
+ * paused ticks per finished pause are persisted ({@code paused-ticks}); the in-flight pause start
+ * is memory-only (a restart mid-pause just loses the current stretch, which is negligible next to
+ * the boot re-anchor of the run itself).
  */
 public final class DataStore {
 
@@ -20,6 +27,7 @@ public final class DataStore {
 
   private final File file;
   private YamlConfiguration data = new YamlConfiguration();
+  private final Map<UUID, Long> pausedSince = new HashMap<>();
 
   public DataStore(File file) {
     this.file = file;
@@ -94,12 +102,71 @@ public final class DataStore {
 
   /** Seconds the player has been alive in the current run, or 0 when not running. */
   public long runSeconds(UUID uuid) {
+    return runSeconds(uuid, Bukkit.getCurrentTick());
+  }
+
+  /**
+   * Run seconds excluding paused time (time spent inside the haven). Package-visible with an
+   * explicit now for tests; the public overload uses the server tick.
+   */
+  long runSeconds(UUID uuid, long now) {
     long start = getRunStart(uuid);
     if (start < 0) {
       return 0L;
     }
+    long paused = getPausedTicks(uuid);
+    Long since = pausedSince.get(uuid);
+    if (since != null) {
+      paused += Math.max(0L, now - since);
+    }
     // Clamped: a stale anchor from before a restart must never count backwards.
-    return Math.max(0L, (Bukkit.getCurrentTick() - start) / 20L);
+    return Math.max(0L, (now - start - paused) / 20L);
+  }
+
+  public long getPausedTicks(UUID uuid) {
+    return data.getLong(path(uuid) + ".paused-ticks", 0L);
+  }
+
+  /** Cumulative paused ticks from finished pauses; death resets this along with the run. */
+  public void setPausedTicks(UUID uuid, long ticks) {
+    data.set(path(uuid) + ".paused-ticks", ticks);
+  }
+
+  /** True while the player is currently inside the haven with a live run. */
+  public boolean isPaused(UUID uuid) {
+    return pausedSince.containsKey(uuid);
+  }
+
+  /** Pauses the run clock when a player enters the haven. No-op without a live run. */
+  public void pauseRun(UUID uuid) {
+    pauseRun(uuid, Bukkit.getCurrentTick());
+  }
+
+  void pauseRun(UUID uuid, long now) {
+    if (getRunStart(uuid) >= 0 && !pausedSince.containsKey(uuid)) {
+      pausedSince.put(uuid, now);
+    }
+  }
+
+  /**
+   * Resumes the run clock when a player leaves the haven, folding the stretch into paused-ticks.
+   */
+  public void resumeRun(UUID uuid) {
+    resumeRun(uuid, Bukkit.getCurrentTick());
+  }
+
+  void resumeRun(UUID uuid, long now) {
+    Long since = pausedSince.remove(uuid);
+    if (since == null) {
+      return;
+    }
+    setPausedTicks(uuid, getPausedTicks(uuid) + Math.max(0L, now - since));
+    save();
+  }
+
+  /** Drops an in-flight pause without counting it (death resets the run anyway). */
+  public void discardPause(UUID uuid) {
+    pausedSince.remove(uuid);
   }
 
   /**

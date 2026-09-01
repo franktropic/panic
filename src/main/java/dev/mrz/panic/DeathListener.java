@@ -37,6 +37,8 @@ public final class DeathListener implements Listener {
     plugin.data().setBest(p.getUniqueId(), best);
     plugin.data().setRunStart(p.getUniqueId(), -1L);
     plugin.data().setEscaped(p.getUniqueId(), false);
+    plugin.data().discardPause(p.getUniqueId());
+    plugin.data().setPausedTicks(p.getUniqueId(), 0L);
     plugin.data().save();
     plugin.broadcast(
         ChatColor.WHITE
