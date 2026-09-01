@@ -32,6 +32,7 @@ public final class PanicPlugin extends JavaPlugin {
   private DreadService dread;
   private TunnelService tunnels;
   private HavenListener havenListener;
+  private HavenAura aura;
 
   @Override
   public void onEnable() {
@@ -59,11 +60,15 @@ public final class PanicPlugin extends JavaPlugin {
             world.getSpawnLocation().getBlockZ(),
             config.havenSize);
 
+    int havenFloor = -1;
     if (config.havenBuild) {
-      int floor = HavenBuilder.build(world, haven, config.havenFloor, config.havenBorder);
-      if (floor < 0) {
+      havenFloor = HavenBuilder.build(world, haven, config.havenFloor, config.havenBorder);
+      if (havenFloor < 0) {
         getLogger().warning("Haven build: no surface found; leaving the terrain as-is.");
       }
+    }
+    if (config.havenAura && havenFloor > 0) {
+      aura = HavenAura.start(this, world, haven, havenFloor);
     }
 
     scoreboard = new ScoreboardService();
@@ -138,6 +143,10 @@ public final class PanicPlugin extends JavaPlugin {
 
   @Override
   public void onDisable() {
+    if (aura != null) {
+      aura.stop();
+      aura = null;
+    }
     if (alphaManager != null) {
       alphaManager.despawnAll();
     }
@@ -164,6 +173,11 @@ public final class PanicPlugin extends JavaPlugin {
 
   public HavenRegion haven() {
     return haven;
+  }
+
+  /** The haven border glow ring, or null when the aura is disabled or the build found no floor. */
+  public HavenAura aura() {
+    return aura;
   }
 
   /** The peace ring around spawn: while a player is home, the ring is off-limits to mobs. */

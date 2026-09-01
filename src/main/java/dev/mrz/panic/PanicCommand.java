@@ -72,7 +72,9 @@ public final class PanicCommand implements CommandExecutor {
                   + " tunnels="
                   + plugin.tunnels().brokenCount()
                   + " phase="
-                  + plugin.clock().phase());
+                  + plugin.clock().phase()
+                  + " aura="
+                  + (plugin.aura() == null ? 0 : plugin.aura().count()));
       default -> sendUsage(sender);
     }
     return true;
