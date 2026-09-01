@@ -14,11 +14,27 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
   cadence anchored 40-80 blocks from an escaped player, dawn burn-off, YAML persistence in
   plugins/Panic/data.yml, `/panic` admin (spawnalpha [at x z], despalphas, dawn, night, status).
   25/25 tests green, RCON-verified live (spawn/status/kill flows).
+- 2026-09-01: **phase 2 done (dread pack, 0.3.0).** Proximity warnings, distant screams,
+  heartbeat, fake steps/cracks, false alarms, alpha-kill announce.
+- 2026-09-01: **phase 3 done (0.4.0) + spawn peace ring (0.4.1).** Tunnelling with dawn
+  healing: hordes chew through solid blocks on tiered dig times, dawn burns the horde and
+  heals tunneled-back blocks after a grace period. Peace ring: while any player is inside
+  `peace-radius` (32), monster spawns are cancelled in the ring, monsters in the ring are
+  de-targeted, set on fire each second, and cannot retarget (EntityTargetEvent gate); alphas
+  cannot hunt a player in the ring. Fixes the spawn-camp bug where the rejoin point (2 blocks
+  outside the 24x24 box) left rejoining players as valid hunt targets at 100 blocks.
+- 2026-09-01: **0.4.2 speed baseline.** Vanilla creepers run 0.25 movement speed (9% faster
+  than the 0.23 zombie baseline). `MobSpeedTuner` locks creepers to `mobs.creeper-speed`
+  (default 0.23, 0 = vanilla) on spawn — every mob now moves at the same 1x pace.
+  RCON-verified live via `attribute ... base get`.
+
+Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
 ## Next step
 
-Playtest with a real player: join, escape the haven, watch the night cycle, die, check /top.
-Then finish the core loop: hordes that dig through walls, more alpha variety — per the brief.
+Playtest with real players (Andryo + Pete): spawn-camp fix, creeper pace, tunneling.
+Then build-order step 4: RPG stats, corpses, blood moon. Code review of the full polish pass
+is queued on switchboard (task 283f47fa) — apply findings when it lands.
 
 ## NMS recipe (add only when a feature needs it)
 
