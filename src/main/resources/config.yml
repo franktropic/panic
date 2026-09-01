@@ -5,6 +5,10 @@
 spawn-haven:
   # Size of the square safe region, in blocks (brief: ~24x24).
   size: 24
+  # Peace ring radius around the haven center, in blocks. While a player is inside the ring, no
+  # monsters spawn in it, monsters in it lose their target and catch fire, and alphas will not hunt
+  # a player standing in it (no camping the gate).
+  peace-radius: 32
   # Kit items given on first join (vanilla item strings), e.g. [IRON_SWORD, COBBLESTONE:16].
   kit:
     - IRON_SWORD
@@ -57,3 +61,15 @@ dread:
   false-alarm-percent: 25
   false-alarm-min-seconds: 60
   false-alarm-max-seconds: 180
+
+tunnel:
+  # Blocked hunting zombies chew through the block ahead (brief: tunneling). Alphas do not dig.
+  enabled: true
+  # Horde dig speed, 1.0 = one material tier-second per second of being blocked (dirt ~1s, wood ~3s,
+  # stone ~6s, metal ~15s at 1.0).
+  horde-dig-speed: 1.0
+  # Vanilla zombies dig too, at half the horde speed (brief). Clamped to (0, 1].
+  vanilla-dig-speed: 0.5
+  # Tunnels heal at dawn, but blocks broken in the final N seconds before dawn stay broken so
+  # escapes are not walled off (brief).
+  dawn-heal-grace-seconds: 30

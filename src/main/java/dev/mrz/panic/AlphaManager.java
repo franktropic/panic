@@ -109,7 +109,9 @@ public final class AlphaManager implements Listener {
     return p.isOnline()
         && !p.isDead()
         && plugin.data().isEscaped(p.getUniqueId())
-        && !plugin.haven().contains(p.getLocation());
+        && !plugin.haven().contains(p.getLocation())
+        // Spawn is off-limits: an escaped player standing at the rejoin point is not fair game.
+        && !plugin.inPeaceRing(p.getLocation());
   }
 
   private Player nearestHunt(Mob mob, double range) {

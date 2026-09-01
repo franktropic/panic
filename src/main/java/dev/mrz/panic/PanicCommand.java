@@ -59,6 +59,8 @@ public final class PanicCommand implements CommandExecutor {
                   + plugin.alphaManager().liveAlphas()
                   + " horde="
                   + plugin.alphaManager().liveHorde()
+                  + " tunnels="
+                  + plugin.tunnels().brokenCount()
                   + " phase="
                   + plugin.clock().phase());
       default -> sendUsage(sender);

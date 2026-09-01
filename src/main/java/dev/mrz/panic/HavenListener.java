@@ -3,6 +3,7 @@ package dev.mrz.panic;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -11,6 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -110,9 +112,61 @@ public final class HavenListener implements Listener {
 
   @EventHandler
   public void onCreatureSpawn(CreatureSpawnEvent e) {
-    if (e.getEntity() instanceof Monster && plugin.haven().contains(e.getLocation())) {
+    if (!(e.getEntity() instanceof Monster)) {
+      return;
+    }
+    Location loc = e.getLocation();
+    if (plugin.haven().contains(loc)) {
+      e.setCancelled(true);
+      return;
+    }
+    // While a player is home, no monsters spawn within the peace ring.
+    if (playerInPeaceRing() && plugin.inPeaceRing(loc)) {
       e.setCancelled(true);
     }
+  }
+
+  /**
+   * Runs every second: while a player is home, monsters inside the peace ring lose their target and
+   * catch fire instead of camping the haven gate.
+   */
+  public void peaceTick() {
+    if (!playerInPeaceRing()) {
+      return;
+    }
+    HavenRegion haven = plugin.haven();
+    World world = plugin.world();
+    Location center = new Location(world, haven.centerX() + 0.5, 0, haven.centerZ() + 0.5);
+    double r = plugin.config().peaceRadius;
+    for (Entity e : world.getNearbyEntities(center, r, 32, r)) {
+      if (e instanceof Monster m) {
+        m.setTarget(null);
+        // 2s of fire, renewed every second while it stays in the ring.
+        if (m.getFireTicks() < 40) {
+          m.setFireTicks(40);
+        }
+      }
+    }
+  }
+
+  /** While a player is home, monsters in the peace ring may not (re-)target players. */
+  @EventHandler
+  public void onTarget(EntityTargetEvent e) {
+    if (!(e.getEntity() instanceof Monster m) || !(e.getTarget() instanceof Player)) {
+      return;
+    }
+    if (playerInPeaceRing() && plugin.inPeaceRing(m.getLocation())) {
+      e.setTarget(null);
+    }
+  }
+
+  private boolean playerInPeaceRing() {
+    for (Player p : plugin.getServer().getOnlinePlayers()) {
+      if (plugin.inPeaceRing(p.getLocation())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void knockBackToCenter(Player p, Location from) {

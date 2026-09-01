@@ -3,6 +3,7 @@ package dev.mrz.panic;
 import java.io.File;
 import java.util.UUID;
 import java.util.logging.Logger;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -29,6 +30,8 @@ public final class PanicPlugin extends JavaPlugin {
   private AlphaManager alphaManager;
   private ScoreboardService scoreboard;
   private DreadService dread;
+  private TunnelService tunnels;
+  private HavenListener havenListener;
 
   @Override
   public void onEnable() {
@@ -53,14 +56,17 @@ public final class PanicPlugin extends JavaPlugin {
     scoreboard = new ScoreboardService();
     alphaManager = new AlphaManager(this);
     dread = new DreadService(this);
+    tunnels = new TunnelService(this);
     clock =
         new DayNightClock(
             world,
             new TimeOfDay(config.dayLength, config.nightLength),
             alphaManager::killAllAtDawn);
+    clock.addDawnListener(tunnels::dawnHeal);
     clock.start();
 
-    getServer().getPluginManager().registerEvents(new HavenListener(this), this);
+    havenListener = new HavenListener(this);
+    getServer().getPluginManager().registerEvents(havenListener, this);
     getServer().getPluginManager().registerEvents(new DeathListener(this), this);
     getServer().getPluginManager().registerEvents(alphaManager, this);
 
@@ -84,7 +90,9 @@ public final class PanicPlugin extends JavaPlugin {
             + config.havenSize
             + "x"
             + config.havenSize
-            + ", day "
+            + " (peace ring "
+            + config.peaceRadius
+            + "b), day "
             + config.dayLength
             + "t / night "
             + config.nightLength
@@ -94,12 +102,17 @@ public final class PanicPlugin extends JavaPlugin {
             + config.hordeSize
             + " (cap "
             + config.hordeMaxTotal
-            + ").");
+            + "), tunneling "
+            + (config.tunnelEnabled ? "on" : "off")
+            + (config.tunnelEnabled ? " (heal grace " + config.tunnelHealGraceSeconds + "s)" : "")
+            + ".");
   }
 
   private void secondTick() {
     alphaManager.tick();
     dread.tick();
+    tunnels.tick();
+    havenListener.peaceTick();
     for (Player p : getServer().getOnlinePlayers()) {
       UUID uuid = p.getUniqueId();
       scoreboard.update(p, data.runSeconds(uuid), data.getBest(uuid));
@@ -139,6 +152,15 @@ public final class PanicPlugin extends JavaPlugin {
     return haven;
   }
 
+  /** The peace ring around spawn: while a player is home, the ring is off-limits to mobs. */
+  public boolean inPeaceRing(Location loc) {
+    HavenRegion h = haven;
+    double r = config().peaceRadius;
+    double dx = loc.getX() - (h.centerX() + 0.5);
+    double dz = loc.getZ() - (h.centerZ() + 0.5);
+    return dx * dx + dz * dz <= r * r;
+  }
+
   public DayNightClock clock() {
     return clock;
   }
@@ -153,6 +175,10 @@ public final class PanicPlugin extends JavaPlugin {
 
   public DreadService dread() {
     return dread;
+  }
+
+  public TunnelService tunnels() {
+    return tunnels;
   }
 
   public String prefix() {

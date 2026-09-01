@@ -35,9 +35,15 @@ public final class PanicConfig {
   public final int falseAlarmPercent;
   public final int falseAlarmMinSec;
   public final int falseAlarmMaxSec;
+  public final boolean tunnelEnabled;
+  public final double tunnelHordeDigSpeed;
+  public final double tunnelVanillaDigSpeed;
+  public final int tunnelHealGraceSeconds;
+  public final int peaceRadius;
 
   public PanicConfig(FileConfiguration c) {
     this.havenSize = c.getInt("spawn-haven.size", 24);
+    this.peaceRadius = Math.max(8, Math.min(128, c.getInt("spawn-haven.peace-radius", 32)));
     this.kit = new ArrayList<>();
     for (KitEntry e : parseKitEntries(c.getStringList("spawn-haven.kit"))) {
       this.kit.add(new ItemStack(e.material(), e.amount()));
@@ -68,6 +74,11 @@ public final class PanicConfig {
     this.falseAlarmMinSec = Math.max(1, c.getInt("dread.false-alarm-min-seconds", 60));
     this.falseAlarmMaxSec =
         Math.max(this.falseAlarmMinSec, c.getInt("dread.false-alarm-max-seconds", 180));
+    this.tunnelEnabled = c.getBoolean("tunnel.enabled", true);
+    this.tunnelHordeDigSpeed = Math.max(0.1, c.getDouble("tunnel.horde-dig-speed", 1.0));
+    this.tunnelVanillaDigSpeed =
+        Math.max(0.1, Math.min(1.0, c.getDouble("tunnel.vanilla-dig-speed", 0.5)));
+    this.tunnelHealGraceSeconds = Math.max(0, c.getInt("tunnel.dawn-heal-grace-seconds", 30));
   }
 
   /** A kit entry before Bukkit ItemStack creation (testable without a server). */
