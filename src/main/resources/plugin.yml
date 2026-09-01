@@ -1,6 +1,18 @@
 name: Panic
-version: 0.1.0
+version: 0.2.0
 main: dev.mrz.panic.PanicPlugin
 api-version: '26.2'
 description: Alpha horde roguelike survival - night belongs to the alphas.
 author: franktropic
+commands:
+  top:
+    description: Longest survival runs.
+    usage: /top
+  panic:
+    description: Panic admin.
+    usage: /panic <spawnalpha|despalphas|dawn|night|status>
+    permission: panic.admin
+permissions:
+  panic.admin:
+    description: Panic admin commands.
+    default: op

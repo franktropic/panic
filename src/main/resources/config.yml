@@ -6,7 +6,11 @@ spawn-haven:
   # Size of the square safe region, in blocks (brief: ~24x24).
   size: 24
   # Kit items given on first join (vanilla item strings), e.g. [IRON_SWORD, COBBLESTONE:16].
-  kit: []
+  kit:
+    - IRON_SWORD
+    - COBBLESTONE:16
+    - BREAD:8
+    - TORCH:8
 
 day-night:
   # Ticks per phase. 6000 ticks = 5 min, 12000 = 10 min (brief defaults).

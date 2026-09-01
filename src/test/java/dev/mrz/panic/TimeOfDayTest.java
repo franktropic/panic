@@ -48,4 +48,27 @@ final class TimeOfDayTest {
     assertTrue(tod.isNight(9000));
     assertFalse(tod.isNight(3000));
   }
+
+  @Test
+  void vanillaTimeMapsDayToVanillaDayWindow() {
+    assertEquals(0L, tod.vanillaTimeAt(0));
+    assertEquals(5998L, tod.vanillaTimeAt(2999));
+    assertEquals(11998L, tod.vanillaTimeAt(5999));
+  }
+
+  @Test
+  void vanillaTimeMapsNightToVanillaNightWindow() {
+    assertEquals(12000L, tod.vanillaTimeAt(6000));
+    assertEquals(18000L, tod.vanillaTimeAt(12000));
+    assertEquals(23999L, tod.vanillaTimeAt(17999));
+  }
+
+  @Test
+  void vanillaTimeAlwaysInRangeAndWraps() {
+    for (long t = -40000; t < 40000; t++) {
+      long v = tod.vanillaTimeAt(t);
+      assertTrue(v >= 0 && v < 24000, "vanilla time out of range at tick " + t + ": " + v);
+    }
+    assertEquals(tod.vanillaTimeAt(0), tod.vanillaTimeAt(18000));
+  }
 }

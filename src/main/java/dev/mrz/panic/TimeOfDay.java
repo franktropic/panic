@@ -49,4 +49,17 @@ public final class TimeOfDay {
   public boolean isNight(long tick) {
     return phaseAt(tick) == Phase.NIGHT;
   }
+
+  /**
+   * Maps a cycle tick to a vanilla world time (0-23999) so the sky matches the shortened cycle. The
+   * day half is stretched over the vanilla day window [0,12000) and the night half over
+   * [12000,24000), so a 6000/12000 config reads as 5 minutes of sun and 10 of night in real time.
+   */
+  public long vanillaTimeAt(long tick) {
+    long t = Math.floorMod(tick, cycleLength());
+    if (t < dayLength) {
+      return t * 12000L / dayLength;
+    }
+    return 12000L + (t - dayLength) * 12000L / nightLength;
+  }
 }

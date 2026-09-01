@@ -7,11 +7,18 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
 - 2026-09-01: bootstrap. Gradle + Paper API 26.2 + JUnit 6 + spotless/checkstyle skeleton,
   `TimeOfDay` day-cycle helper with tests, plugin shell (`PanicPlugin`, plugin.yml, config.yml
   phase-1 knobs). Nothing in-game yet.
+- 2026-09-01: **phase 1 done + deployed to mrzmc as Panic 0.2.0.** One-way spawn haven (24x24,
+  kit, re-entry knockback, mob/hunger protection, no monster spawns), survival run timer with
+  per-player sidebar + `/top`, alpha zombies (5x hp / 3x dmg / 0.5x speed / 2.5x scale, glowing,
+  persistent, anti-idle nudge) leading hordes of 8 (cap 40), night-only spawns on a 10-minute
+  cadence anchored 40-80 blocks from an escaped player, dawn burn-off, YAML persistence in
+  plugins/Panic/data.yml, `/panic` admin (spawnalpha [at x z], despalphas, dawn, night, status).
+  25/25 tests green, RCON-verified live (spawn/status/kill flows).
 
 ## Next step
 
-Phase 1 — core loop: one-way spawn haven, high score (sidebar + /top), alpha with horde,
-shortened days. See build order below.
+Playtest with a real player: join, escape the haven, watch the night cycle, die, check /top.
+Then finish the core loop: hordes that dig through walls, more alpha variety — per the brief.
 
 ## NMS recipe (add only when a feature needs it)
 
