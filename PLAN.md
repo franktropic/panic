@@ -76,17 +76,38 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
     instantly de-target and burn it).
   - `DataStore.save()` is atomic (write sidecar + rename) so a crash mid-save can't wipe the
     high scores; `alpha.type` is validated at enable with a warning fallback to ZOMBIE.
-  Build + 42 tests green (new `DataStoreTest`), deployed, RCON-verified live (0 SEVERE,
-  floor/ring/ceiling probes pass, no "no surface found" warning).
+   Build + 42 tests green (new `DataStoreTest`), deployed, RCON-verified live (0 SEVERE,
+   floor/ring/ceiling probes pass, no "no surface found" warning).
+ - 2026-09-01: **0.4.6 fun-factor tuning + death-keep.** Andryo's pre-playtest package:
+   - Wired the dead `death-keeps-percent` knob: on death, per-item coin flip moves kept units
+     from `getDrops()` into 26.2's `getItemsToKeep()` (stacks kept there survive into the
+     inventory), and `setDroppedExp(round(dropped * chance))`. Pure `countKept` helper, 4 new
+     tests (46 total). This is the inventory/XP analog of the stat points until step 4 lands.
+   - Tuning dials (Andryo's pick for the Pete playtest): `day-length-ticks` 6000 → 8400
+     (5 → 7 min days, more prep time before the hunt) and `damage-multiplier` 3.0 → 2.0
+     (alpha 9.0 → 6.0 per hit).
+   - RCON-verified live: forced a chunk load, spawned an alpha, read attributes — alpha base
+     attack_damage 6.0 (horde members 3.0, unscaled), max_health 100.0 (5.0x, unchanged).
+     26.2 note: the vanilla zombie base is 3.0 on all difficulties, so the old 3.0x dial read
+     9.0, not 15.0.
+   - 26.2 API/RCON quirks learned live: `PlayerDeathEvent.getDrops()` returns `List<ItemStack>`
+     (not `List<Item>`) and `PlayerDeathEvent` gained `getItemsToKeep()`; attribute names lost
+     the `generic.` prefix (`minecraft:attack_damage`, not `minecraft:generic.attack_damage`);
+     selectors no longer accept `range` or `data` options; `attribute` takes exactly one entity
+     (use `execute as @e[...] run attribute @s ...` for multi); `say` output is not captured by
+     RCON (use `execute if ... run say X` silence as a presence probe); with zero players online
+     no chunks stay loaded — a spawned alpha is pruned by `pruneDeadAlphas` within ~30s once its
+     temporary chunk load drops (test artifact, not a bug; `forceload add` works and pins it).
 
 Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
 ## Next step
 
-Playtest on 0.4.5 with real players: confirm the safe room is truly safe (pop a creeper /
-throw lava in the room — no damage), verify a chest a horde chews through drops its loot, and
-that a run restarted across a server restart counts from 0 (not negative). Re-op Anita + Jash
-on join (new world = no ops). Then build-order step 4: RPG stats, corpses, blood moon.
+Playtest on 0.4.6 with real players (Pete is up): confirm the safe room is truly safe (pop a
+creeper / throw lava in the room — no damage), verify a chest a horde chews through drops its
+loot, that a run restarted across a server restart counts from 0 (not negative), and that a
+death drops most of the kit but keeps ~25% + some XP (the new death-keep dial). Re-op Anita +
+Jash on join (new world = no ops). Then build-order step 4: RPG stats, corpses, blood moon.
 (The earlier switchboard code-review task 283f47fa failed before producing findings; the
 0.4.5 manual read covers that ground — re-dispatch a reviewer later if step 4 lands big.)
 

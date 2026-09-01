@@ -22,15 +22,16 @@ spawn-haven:
     - TORCH:8
 
 day-night:
-  # Ticks per phase. 6000 ticks = 5 min, 12000 = 10 min (brief defaults).
-  day-length-ticks: 6000
+  # Ticks per phase. 6000 ticks = 5 min, 8400 = 7 min, 12000 = 10 min.
+  # Day is the prep phase (gather, wall up, eat) — keep it long enough to actually build.
+  day-length-ticks: 8400
   night-length-ticks: 12000
 
 alpha:
   # Base mob type. Zombies first (brief).
   type: ZOMBIE
   health-multiplier: 5.0
-  damage-multiplier: 3.0
+  damage-multiplier: 2.0
   speed-multiplier: 0.5
   scale: 2.5
   # Custom long-range detection.
@@ -56,7 +57,9 @@ horde:
   max-total: 40
 
 highscore:
-  # Stat points kept on death, in percent (brief: 25%).
+  # Percent of items and XP kept in the inventory on death (each item unit is a coin flip); the
+  # rest drops at the grave as usual. 0 = full vanilla wipe. (Brief: 25%, written against stat
+  # points — until RPG stats land this is the inventory/XP analog.)
   death-keeps-percent: 25
 
 dread:
