@@ -1,0 +1,38 @@
+# Panic config.
+# Every number from the brief lands here as its build phase ships (see PLAN.md).
+# Phase 1 (core loop) knobs below.
+
+spawn-haven:
+  # Size of the square safe region, in blocks (brief: ~24x24).
+  size: 24
+  # Kit items given on first join (vanilla item strings), e.g. [IRON_SWORD, COBBLESTONE:16].
+  kit: []
+
+day-night:
+  # Ticks per phase. 6000 ticks = 5 min, 12000 = 10 min (brief defaults).
+  day-length-ticks: 6000
+  night-length-ticks: 12000
+
+alpha:
+  # Base mob type. Zombies first (brief).
+  type: ZOMBIE
+  health-multiplier: 5.0
+  damage-multiplier: 3.0
+  speed-multiplier: 0.5
+  scale: 2.5
+  # Custom long-range detection.
+  detect-range: 100.0
+  # Server-wide spawn cadence.
+  spawn-interval-minutes: 10
+  # Load-bearing performance cap (brief).
+  max-concurrent: 4
+
+horde:
+  # Members per alpha.
+  size: 8
+  # Load-bearing performance cap: total live horde mobs, server wide.
+  max-total: 40
+
+highscore:
+  # Stat points kept on death, in percent (brief: 25%).
+  death-keeps-percent: 25

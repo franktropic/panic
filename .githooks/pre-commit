@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Pre-commit: format check, lint, tests. Run `./gradlew spotlessApply` before committing if spotless complains.
+set -e
+./gradlew --console=plain -q spotlessCheck checkstyleMain checkstyleTest test
+echo "panic pre-commit: OK"
