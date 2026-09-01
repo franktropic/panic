@@ -31,9 +31,17 @@ public final class DataStore {
     }
   }
 
+  /**
+   * Saves atomically: write to a sidecar file, then rename over the real one. A crash mid-save must
+   * not leave a half-written data.yml that wipes the high scores.
+   */
   public void save() {
+    File tmp = new File(file.getParentFile(), file.getName() + ".tmp");
     try {
-      data.save(file);
+      data.save(tmp);
+      if (!tmp.renameTo(file)) {
+        data.save(file);
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -90,7 +98,25 @@ public final class DataStore {
     if (start < 0) {
       return 0L;
     }
-    return (Bukkit.getCurrentTick() - start) / 20L;
+    // Clamped: a stale anchor from before a restart must never count backwards.
+    return Math.max(0L, (Bukkit.getCurrentTick() - start) / 20L);
+  }
+
+  /**
+   * Bukkit's tick counter resets to 0 on every restart, so a persisted run-start from the previous
+   * boot would count negative. Re-anchor any in-progress run to this boot; the run itself (the
+   * escaped flag) is kept, the clock just starts over.
+   */
+  public void resetStaleRunStarts() {
+    ConfigurationSection players = data.getConfigurationSection("players");
+    if (players == null) {
+      return;
+    }
+    for (String key : players.getKeys(false)) {
+      if (players.getLong(key + ".run-start", -1L) >= 0) {
+        players.set(key + ".run-start", 0L);
+      }
+    }
   }
 
   /** One alpha per player that has ever joined (brief population cap). */

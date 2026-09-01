@@ -7,7 +7,6 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -54,7 +53,7 @@ public final class HavenListener implements Listener {
     if (!plugin.data().isEscaped(p.getUniqueId())) {
       if (isNew) {
         for (org.bukkit.inventory.ItemStack item : plugin.config().kit) {
-          p.getInventory().addItem(item);
+          p.getInventory().addItem(item.clone());
         }
       }
       p.teleport(havenCenter());
@@ -119,29 +118,14 @@ public final class HavenListener implements Listener {
     }
   }
 
+  /**
+   * The haven is a true sanctuary: no damage cause reaches a player inside the box. The old version
+   * only cancelled starvation, melee and projectile damage, so a creeper explosion, lava, fire,
+   * poison or a /kill still hurt a player standing in the safe room.
+   */
   @EventHandler
   public void onDamage(EntityDamageEvent e) {
-    if (!(e.getEntity() instanceof Player p) || !plugin.haven().contains(p.getLocation())) {
-      return;
-    }
-    EntityDamageEvent.DamageCause cause = e.getCause();
-    if (cause == EntityDamageEvent.DamageCause.STARVATION) {
-      e.setCancelled(true);
-      return;
-    }
-    org.bukkit.damage.DamageSource source = e.getDamageSource();
-    if (source == null) {
-      return;
-    }
-    if (cause == EntityDamageEvent.DamageCause.ENTITY_ATTACK
-        || cause == EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK) {
-      if (source.getDirectEntity() instanceof LivingEntity) {
-        e.setCancelled(true);
-      }
-      return;
-    }
-    if (cause == EntityDamageEvent.DamageCause.PROJECTILE
-        && source.getCausingEntity() instanceof LivingEntity) {
+    if (e.getEntity() instanceof Player p && plugin.haven().contains(p.getLocation())) {
       e.setCancelled(true);
     }
   }

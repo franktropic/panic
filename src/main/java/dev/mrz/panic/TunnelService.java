@@ -13,9 +13,11 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Container;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Zombie;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
@@ -100,6 +102,7 @@ public final class TunnelService {
       chewBlock(z, target);
     }
     pruneTracked();
+    pruneStaleChew(world);
   }
 
   /** Finds the blocking block ahead of the digger and adds one second of chew work to it. */
@@ -117,12 +120,13 @@ public final class TunnelService {
       return;
     }
     Block block = hit.getHitBlock();
+    Key key = new Key(block.getX(), block.getY(), block.getZ());
     Material material = block.getType();
     if (!material.isSolid()) {
-      return; // plants, torches, buttons: not a real wall, let it re-path
+      chew.remove(key); // plants, torches, buttons: not a real wall; also clears stale work
+      return; // let it re-path
     }
     int needed = DigTiers.chewTicks(material);
-    Key key = new Key(block.getX(), block.getY(), block.getZ());
     if (needed <= 0) {
       chew.remove(key);
       return;
@@ -153,6 +157,14 @@ public final class TunnelService {
     Key key = new Key(block.getX(), block.getY(), block.getZ());
     brokenBlocks.put(key, new BreakRecord(block.getBlockData(), Bukkit.getCurrentTick()));
     Location loc = block.getLocation();
+    // A chewed-through chest or hopper would otherwise keep its contents in a void block.
+    if (block.getState() instanceof Container container) {
+      for (ItemStack item : container.getInventory().getContents()) {
+        if (item != null) {
+          loc.getWorld().dropItemNaturally(loc, item);
+        }
+      }
+    }
     if (nearPlayers(loc)) {
       loc.getWorld().playSound(loc, breakSound(material), 1.0f, 1.0f);
       loc.getWorld()
@@ -233,6 +245,21 @@ public final class TunnelService {
   private void forget(UUID id) {
     lastPos.remove(id);
     stuckSeconds.remove(id);
+  }
+
+  /**
+   * Chew work on a block that is no longer solid (player-mined, exploded, or whose digger left and
+   * the chunk unloaded) would leak forever; sweep it each second.
+   */
+  private void pruneStaleChew(World world) {
+    for (Iterator<Map.Entry<Key, Double>> it = chew.entrySet().iterator(); it.hasNext(); ) {
+      Key k = it.next().getKey();
+      if (!world.isChunkLoaded(k.x() >> 4, k.z() >> 4)) {
+        it.remove();
+      } else if (!world.getBlockAt(k.x(), k.y(), k.z()).getType().isSolid()) {
+        it.remove();
+      }
+    }
   }
 
   /** Dropped diggers leak map entries otherwise; sweep only when the cache grows. */

@@ -290,6 +290,11 @@ public final class AlphaManager implements Listener {
       if (plugin.haven().contains(loc)) {
         continue;
       }
+      // An anchor near the ring edge can put a 40-80b spawn back inside the ring, where the peace
+      // tick would immediately strip the alpha of its target and set it on fire.
+      if (plugin.inPeaceRing(loc)) {
+        continue;
+      }
       doSpawnAlpha(loc);
       return true;
     }
@@ -378,7 +383,7 @@ public final class AlphaManager implements Listener {
     if (e.getDamager() instanceof Zombie z
         && e.getEntity() instanceof Player p
         && z.hasMetadata(META_ALPHA)) {
-      lastAlphaHit.put(p.getUniqueId(), Bukkit.getCurrentTick() + 0L);
+      lastAlphaHit.put(p.getUniqueId(), (long) Bukkit.getCurrentTick());
     }
   }
 

@@ -105,18 +105,30 @@ final class HavenBuilder {
   }
 
   /**
-   * Like {@link SurfaceUtil#findSurface} but treats the floor/border materials as transparent, so a
-   * slab left by an earlier build does not read as the surface.
+   * Like {@link SurfaceUtil#findSurface} but anchors on the natural ground even when a slab from an
+   * earlier build sits on top of it. Two cases, top to bottom: (1) air above natural solid ground —
+   * the pristine case; (2) a floor/border slab directly on natural solid ground — a previous build
+   * at the same level, whose surface is one block above the slab. A slab with air under it is
+   * floating and keeps being ignored (case 1 finds the ground below it instead).
    */
   private static int findSurfaceIgnoring(
       World world, int x, int z, Material floor, Material border) {
     for (int y = world.getMaxHeight() - 1; y > world.getMinHeight(); y--) {
       Block here = world.getBlockAt(x, y, z);
-      if (here.getType().isAir()) {
+      Material type = here.getType();
+      if (type.isAir()) {
         Block below = world.getBlockAt(x, y - 1, z);
-        Material type = below.getType();
-        if (type != floor && type != border && below.isSolid()) {
+        Material belowType = below.getType();
+        if (belowType != floor && belowType != border && below.isSolid()) {
           return y;
+        }
+        continue;
+      }
+      if (type == floor || type == border) {
+        Block below = world.getBlockAt(x, y - 1, z);
+        Material belowType = below.getType();
+        if (belowType != floor && belowType != border && below.isSolid()) {
+          return y + 1;
         }
       }
     }

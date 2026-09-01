@@ -38,8 +38,14 @@ public final class PanicPlugin extends JavaPlugin {
     instance = this;
     saveDefaultConfig();
     config = new PanicConfig(getConfig());
+    if (config.alphaType != org.bukkit.entity.EntityType.ZOMBIE) {
+      getLogger()
+          .warning(
+              "alpha.type " + config.alphaType + " is not supported yet; spawning ZOMBIE alphas.");
+    }
     data = new DataStore(new File(getDataFolder(), "data.yml"));
     data.load();
+    data.resetStaleRunStarts();
 
     if (getServer().getWorlds().isEmpty()) {
       getLogger().severe("No worlds loaded; disabling Panic.");

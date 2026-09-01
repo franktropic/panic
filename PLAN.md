@@ -53,17 +53,42 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
   `-8089496942705041839` extracted from `world_gen_settings.dat` (26.2 moved the seed out of
   level.dat, and an empty `level-seed` is random per generation). `gamerule locator_bar false`
   set post-regen (new-world gamerules reset). RCON-verified live: 12/12 haven probes, locator
-  bar off, live creeper blast left the floor intact and cratered the outside ring.
+   bar off, live creeper blast left the floor intact and cratered the outside ring.
+- 2026-09-01: **0.4.5 bug-hunt pass.** Full read of all 21 source files; fixed the real defects
+  found:
+  - Haven is now a true sanctuary — `onDamage` cancels **every** damage cause for a player inside
+    the box (was only starvation + melee + projectile; a creeper blast, lava, fire, poison or
+    /kill still hurt you in the safe room).
+  - New-player kit now clones each `ItemStack` (`onJoin` handed out the config's own instance, so
+    one player's sword damage persisted into the next newcomer's kit).
+  - Run timer across restarts: Bukkit tick counts reset to 0 on boot, so a persisted run-start
+    counted negative. `DataStore.resetStaleRunStarts()` re-anchors any in-progress run to the new
+    boot at `onEnable` (the run/escaped flag survives, the clock starts over) and `runSeconds`
+    clamps to >= 0 so the sidebar never shows negative time.
+  - `HavenBuilder` rebuild idempotency: `findSurfaceIgnoring` now also anchors on a floor/border
+    slab sitting directly on natural solid ground (surface = one above the slab). Previously a
+    rebuild found "no surface" on the already-built spawn and silently skipped.
+  - `TunnelService`: a chewed-through chest/hopper now drops its contents instead of voiding
+    them; the `chew` work map prunes stale entries (block no longer solid, or its chunk
+    unloaded) so dropped diggers stop leaking.
+  - `AlphaManager.spawnAlpha` skips 40-80b candidates that land back inside the peace ring
+    (an anchor near the ring edge could put the spawn in the ring, where the peace tick would
+    instantly de-target and burn it).
+  - `DataStore.save()` is atomic (write sidecar + rename) so a crash mid-save can't wipe the
+    high scores; `alpha.type` is validated at enable with a warning fallback to ZOMBIE.
+  Build + 42 tests green (new `DataStoreTest`), deployed, RCON-verified live (0 SEVERE,
+  floor/ring/ceiling probes pass, no "no surface found" warning).
 
 Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
 ## Next step
 
-Playtest again with real players on 0.4.4: spawn protection (try to mine the floor, pop a
-creeper in the room), peace ring at surface elevation, no floating leaves. Re-op Anita + Jash
-on join (new world = no ops). Then build-order step 4: RPG stats, corpses, blood moon. Code
-review of the full polish pass is queued on switchboard (task 283f47fa) — apply findings when
-it lands.
+Playtest on 0.4.5 with real players: confirm the safe room is truly safe (pop a creeper /
+throw lava in the room — no damage), verify a chest a horde chews through drops its loot, and
+that a run restarted across a server restart counts from 0 (not negative). Re-op Anita + Jash
+on join (new world = no ops). Then build-order step 4: RPG stats, corpses, blood moon.
+(The earlier switchboard code-review task 283f47fa failed before producing findings; the
+0.4.5 manual read covers that ground — re-dispatch a reviewer later if step 4 lands big.)
 
 ## NMS recipe (add only when a feature needs it)
 
