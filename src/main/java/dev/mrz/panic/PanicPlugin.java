@@ -33,6 +33,7 @@ public final class PanicPlugin extends JavaPlugin {
   private TunnelService tunnels;
   private HavenListener havenListener;
   private HavenAura aura;
+  private NightHunt hunt;
 
   @Override
   public void onEnable() {
@@ -70,6 +71,7 @@ public final class PanicPlugin extends JavaPlugin {
     if (config.havenAura && havenFloor > 0) {
       aura = HavenAura.start(this, world, haven, havenFloor);
     }
+    hunt = NightHunt.start(this);
 
     scoreboard = new ScoreboardService();
     alphaManager = new AlphaManager(this);
@@ -143,6 +145,10 @@ public final class PanicPlugin extends JavaPlugin {
 
   @Override
   public void onDisable() {
+    if (hunt != null) {
+      hunt.stop();
+      hunt = null;
+    }
     if (aura != null) {
       aura.stop();
       aura = null;

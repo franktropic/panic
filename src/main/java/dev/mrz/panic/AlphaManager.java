@@ -422,6 +422,11 @@ public final class AlphaManager implements Listener {
     return alphas.size();
   }
 
+  /** True when this zombie is a managed alpha (its own detect logic, not the night hunt's). */
+  public boolean isAlpha(org.bukkit.entity.Entity e) {
+    return alphas.containsKey(e.getUniqueId());
+  }
+
   public int liveHorde() {
     return budget.horde();
   }

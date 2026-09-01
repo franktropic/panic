@@ -2,6 +2,12 @@
 # Every number from the brief lands here as its build phase ships (see PLAN.md).
 # Phase 1 (core loop) knobs below.
 
+hunting:
+  # At night, any monster loaded within this range of a player immediately targets them
+  # (vanilla detection is ~16 blocks; 1600 makes the whole loaded map hostile at dusk).
+  # 0 = off (vanilla detection).
+  night-range: 1600
+
 spawn-haven:
   # Size of the square safe region, in blocks (brief: ~24x24).
   size: 24

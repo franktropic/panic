@@ -124,6 +124,20 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
       exit). Rejoining while parked inside resumes the clock and wakes the player outside — a
       disconnect is not a free breather.
     - 6 new clock tests (`DataStorePauseTest`).
+  - 2026-09-01: **0.4.9 night hunt (100x detection at night).** Andryo: increase the general
+    danger; "make mobs have 100x detection range... at night time":
+    - `NightHunt`: every 2s at night, any monster loaded within `hunting.night-range` (default
+      1600 — vanilla detection is ~16 blocks, so the whole loaded map becomes hostile at dusk)
+      of a hunt target immediately takes them. Dusk broadcast once per night: "The dark is
+      listening. Whatever can see you is already walking."
+    - Same hunt-target rules as the alpha (escaped, outside haven + peace ring); monsters inside
+      those zones are skipped; monsters that already have a player target are not re-targeted;
+      alphas are skipped (own detect logic); 32 assignments per scan cap keeps the CPU flat.
+    - Practical note: monsters only exist in loaded chunks, so effective range = min(night-range,
+      load radius); the real effect is "anything that spawns or loads at night starts hunting".
+      Vanilla despawn still prunes the stragglers behind you (the fog reforms).
+    - 5 new tests for the pure nearest-target selection. 26.2 note: `Location.distance` demands a
+      non-null world — the selection uses plain coordinate math.
  
  Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
