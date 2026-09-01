@@ -44,6 +44,9 @@ public final class AlphaManager implements Listener {
     final Zombie zombie;
     final Set<UUID> horde = new HashSet<>();
     Location lastPos;
+    int stuckSeconds;
+    int offlineSeconds;
+    UUID hunted;
 
     Alpha(Zombie zombie) {
       this.zombie = zombie;
@@ -71,7 +74,10 @@ public final class AlphaManager implements Listener {
   /** Called once per second by the plugin. */
   public void tick() {
     pruneDeadAlphas();
-    for (Alpha alpha : alphas.values()) {
+    for (Alpha alpha : new ArrayList<>(alphas.values())) {
+      if (despawnIfHuntedOffline(alpha)) {
+        continue;
+      }
       Player target = currentTarget(alpha);
       if (target == null) {
         Player nearest = nearestHunt(alpha.zombie, plugin.config().detectRange);
@@ -80,12 +86,38 @@ public final class AlphaManager implements Listener {
         }
         target = currentTarget(alpha);
       }
-      nudgeIfStuck(alpha, target);
+      if (target != null) {
+        alpha.hunted = target.getUniqueId();
+      }
+      if (!nudgeIfStuck(alpha, target)) {
+        continue;
+      }
       maintainHorde(alpha, target);
     }
     if (plugin.clock().isNight() && canSpawnNow()) {
       spawnAlpha(randomAnchor());
     }
+  }
+
+  /**
+   * When an alpha's last hunt target logs off, the hunt ends: the alpha waits
+   * alpha.offline-despawn-minutes, then burns away. Returns true when the alpha was despawned.
+   */
+  private boolean despawnIfHuntedOffline(Alpha alpha) {
+    if (alpha.hunted == null) {
+      return false;
+    }
+    Player hunted = Bukkit.getPlayer(alpha.hunted);
+    if (hunted != null && hunted.isOnline()) {
+      alpha.offlineSeconds = 0;
+      return false;
+    }
+    alpha.offlineSeconds++;
+    if (alpha.offlineSeconds >= plugin.config().alphaOfflineDespawnMinutes * 60) {
+      killAlpha(alpha, null, "The hunt ends. Its prey is gone.");
+      return true;
+    }
+    return false;
   }
 
   private boolean canSpawnNow() {
@@ -130,27 +162,45 @@ public final class AlphaManager implements Listener {
     return best;
   }
 
-  /** Alphas never idle: if one barely moved while it has a target in range, push it forward. */
-  private void nudgeIfStuck(Alpha alpha, Player target) {
-    if (target == null) {
-      alpha.lastPos = alpha.zombie.getLocation().clone();
-      return;
-    }
+  /**
+   * Alphas never idle: if one barely moved while it has a target in range, nudge it forward. After
+   * alpha.stuck-retarget-seconds of being stuck, force a retarget to re-roll the pathfinder; after
+   * alpha.stuck-despawn-seconds, give up and despawn.
+   *
+   * @return false when the alpha was despawned for being permanently stuck
+   */
+  private boolean nudgeIfStuck(Alpha alpha, Player target) {
     Location here = alpha.zombie.getLocation();
+    double dist = target == null ? Double.MAX_VALUE : here.distanceSquared(target.getLocation());
     boolean stuck = here.distanceSquared(alpha.lastPos) < 0.25;
-    double dist = here.distanceSquared(target.getLocation());
-    if (stuck && dist > 1.0 && dist < plugin.config().detectRange * plugin.config().detectRange) {
-      Vector dir = target.getLocation().toVector().subtract(here.toVector());
-      dir.setY(0);
-      if (dir.lengthSquared() > 0.01) {
-        dir.normalize().multiply(0.5);
-        if (alpha.zombie.isOnGround()) {
-          dir.setY(0.3);
-        }
-        alpha.zombie.setVelocity(dir);
-      }
-    }
+    boolean inRange =
+        dist > 1.0 && dist < plugin.config().detectRange * plugin.config().detectRange;
     alpha.lastPos = here.clone();
+    if (target == null || !stuck || !inRange) {
+      alpha.stuckSeconds = 0;
+      return true;
+    }
+    PanicConfig cfg = plugin.config();
+    alpha.stuckSeconds++;
+    if (alpha.stuckSeconds >= cfg.alphaStuckDespawnSeconds) {
+      killAlpha(alpha, null, "The alpha loses the trail.");
+      return false;
+    }
+    if (alpha.stuckSeconds == cfg.alphaStuckRetargetSeconds) {
+      alpha.zombie.setTarget(null);
+      alpha.zombie.setTarget(target);
+    }
+    double power = alpha.stuckSeconds >= cfg.alphaStuckRetargetSeconds ? 1.0 : 0.5;
+    Vector dir = target.getLocation().toVector().subtract(here.toVector());
+    dir.setY(0);
+    if (dir.lengthSquared() > 0.01) {
+      dir.normalize().multiply(power);
+      if (alpha.zombie.isOnGround()) {
+        dir.setY(0.35);
+      }
+      alpha.zombie.setVelocity(dir);
+    }
+    return true;
   }
 
   private void maintainHorde(Alpha alpha, Player target) {
@@ -281,7 +331,9 @@ public final class AlphaManager implements Listener {
     if (health != null) {
       z.setHealth(health.getValue());
     }
-    z.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, -1, 0, false, false));
+    if (cfg.alphaGlow) {
+      z.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, -1, 0, false, false));
+    }
 
     Alpha alpha = new Alpha(z);
     z.setMetadata(META_ALPHA, new FixedMetadataValue(plugin, alpha.id));

@@ -30,6 +30,8 @@ public final class ScoreboardService {
     objective.setDisplaySlot(DisplaySlot.SIDEBAR);
     sb.registerNewTeam("panic_run");
     sb.registerNewTeam("panic_best");
+    sb.registerNewTeam("panic_help");
+    sb.registerNewTeam("panic_rule");
     player.setScoreboard(sb);
     bars.put(player.getUniqueId(), objective);
     update(player, 0L, 0L);
@@ -41,8 +43,12 @@ public final class ScoreboardService {
       return;
     }
     Scoreboard sb = objective.getScoreboard();
+    objective.getScore("panic_help").setScore(4);
+    objective.getScore("panic_rule").setScore(3);
     objective.getScore("panic_run").setScore(2);
     objective.getScore("panic_best").setScore(1);
+    team(sb, "panic_help").setSuffix(ChatColor.AQUA + "/panic help");
+    team(sb, "panic_rule").setSuffix(ChatColor.DARK_GRAY + "one life per run");
     team(sb, "panic_run").setSuffix(ChatColor.YELLOW + RunTimer.format(runSeconds));
     team(sb, "panic_best").setSuffix(ChatColor.GRAY + RunTimer.format(bestSeconds));
   }

@@ -5,6 +5,11 @@
 spawn-haven:
   # Size of the square safe region, in blocks (brief: ~24x24).
   size: 24
+  # Flatten the haven at startup into a clean lit room: solid floor at one level, glowing border
+  # ring on the edge, glowing center marker, ceiling cleared.
+  build: true
+  floor: SMOOTH_STONE
+  border: GLOWSTONE
   # Peace ring radius around the haven center, in blocks. While a player is inside the ring, no
   # monsters spawn in it, monsters in it lose their target and catch fire, and alphas will not hunt
   # a player standing in it (no camping the gate).
@@ -34,6 +39,15 @@ alpha:
   spawn-interval-minutes: 10
   # Load-bearing performance cap (brief).
   max-concurrent: 4
+  # Stuck handling: an alpha that has a target in range but barely moves is nudged, forced to
+  # re-path after stuck-retarget-seconds, and despawned (replacing spawn cadence picks a new one)
+  # after stuck-despawn-seconds.
+  stuck-retarget-seconds: 10
+  stuck-despawn-seconds: 30
+  # When the alpha's last hunt target logs off, the alpha despawns after this many minutes.
+  offline-despawn-minutes: 5
+  # Glow effect makes alphas visible through walls. Turn off for pure-dark alphas.
+  show-glow: true
 
 horde:
   # Members per alpha.

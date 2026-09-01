@@ -41,10 +41,20 @@ public final class PanicConfig {
   public final int tunnelHealGraceSeconds;
   public final int peaceRadius;
   public final double creeperSpeed;
+  public final int alphaStuckRetargetSeconds;
+  public final int alphaStuckDespawnSeconds;
+  public final int alphaOfflineDespawnMinutes;
+  public final boolean alphaGlow;
+  public final boolean havenBuild;
+  public final Material havenFloor;
+  public final Material havenBorder;
 
   public PanicConfig(FileConfiguration c) {
     this.havenSize = c.getInt("spawn-haven.size", 24);
     this.peaceRadius = Math.max(8, Math.min(128, c.getInt("spawn-haven.peace-radius", 32)));
+    this.havenBuild = c.getBoolean("spawn-haven.build", true);
+    this.havenFloor = parseMaterial(c.getString("spawn-haven.floor"), Material.SMOOTH_STONE);
+    this.havenBorder = parseMaterial(c.getString("spawn-haven.border"), Material.GLOWSTONE);
     this.kit = new ArrayList<>();
     for (KitEntry e : parseKitEntries(c.getStringList("spawn-haven.kit"))) {
       this.kit.add(new ItemStack(e.material(), e.amount()));
@@ -81,6 +91,24 @@ public final class PanicConfig {
         Math.max(0.1, Math.min(1.0, c.getDouble("tunnel.vanilla-dig-speed", 0.5)));
     this.tunnelHealGraceSeconds = Math.max(0, c.getInt("tunnel.dawn-heal-grace-seconds", 30));
     this.creeperSpeed = Math.max(0, c.getDouble("mobs.creeper-speed", 0.23));
+    this.alphaStuckRetargetSeconds = Math.max(2, c.getInt("alpha.stuck-retarget-seconds", 10));
+    this.alphaStuckDespawnSeconds =
+        Math.max(this.alphaStuckRetargetSeconds, c.getInt("alpha.stuck-despawn-seconds", 30));
+    this.alphaOfflineDespawnMinutes = Math.max(1, c.getInt("alpha.offline-despawn-minutes", 5));
+    this.alphaGlow = c.getBoolean("alpha.show-glow", true);
+  }
+
+  /** Parses a material name, falling back to the default on any problem. */
+  private static Material parseMaterial(String raw, Material fallback) {
+    if (raw == null || raw.isBlank()) {
+      return fallback;
+    }
+    try {
+      Material m = Material.valueOf(raw.trim().toUpperCase());
+      return m == null ? fallback : m;
+    } catch (IllegalArgumentException e) {
+      return fallback;
+    }
   }
 
   /** A kit entry before Bukkit ItemStack creation (testable without a server). */

@@ -1,5 +1,8 @@
 package dev.mrz.panic;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -16,15 +19,23 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.util.Vector;
 
 /**
  * The spawn haven: one-way exit, re-entry knockback, no mob damage or hunger inside, no monster
- * spawns, basic kit for new players.
+ * spawns, basic kit for new players, safe respawn placement.
  */
 public final class HavenListener implements Listener {
 
+  /**
+   * Re-entry gate message cooldown, ticks (5s) so it cannot spam while a player is held at the
+   * edge.
+   */
+  private static final long GATE_MESSAGE_COOLDOWN = 100L;
+
   private final PanicPlugin plugin;
+  private final Map<UUID, Long> lastGateMessage = new HashMap<>();
 
   public HavenListener(PanicPlugin plugin) {
     this.plugin = plugin;
@@ -53,6 +64,22 @@ public final class HavenListener implements Listener {
   @EventHandler
   public void onQuit(PlayerQuitEvent e) {
     plugin.scoreboard().stop(e.getPlayer());
+    lastGateMessage.remove(e.getPlayer().getUniqueId());
+  }
+
+  /**
+   * After death, a new run starts: respawn on the flat haven floor (never inside a block) and hand
+   * out a fresh kit.
+   */
+  @EventHandler
+  public void onRespawn(PlayerRespawnEvent e) {
+    Player p = e.getPlayer();
+    if (!plugin.data().isEscaped(p.getUniqueId())) {
+      e.setRespawnLocation(havenCenter());
+    }
+    for (org.bukkit.inventory.ItemStack item : plugin.config().kit) {
+      p.getInventory().addItem(item.clone());
+    }
   }
 
   @EventHandler(priority = EventPriority.LOW)
@@ -73,7 +100,12 @@ public final class HavenListener implements Listener {
       if (plugin.data().isEscaped(p.getUniqueId())) {
         e.setCancelled(true);
         knockBackToCenter(p, from);
-        p.sendMessage(plugin.prefix() + "The gate is shut. The haven is behind you.");
+        long now = org.bukkit.Bukkit.getCurrentTick();
+        Long last = lastGateMessage.get(p.getUniqueId());
+        if (last == null || now - last >= GATE_MESSAGE_COOLDOWN) {
+          lastGateMessage.put(p.getUniqueId(), now);
+          p.sendMessage(plugin.prefix() + "The gate is shut. The haven is behind you.");
+        }
       }
     } else if (!plugin.data().isEscaped(p.getUniqueId())) {
       plugin.data().setEscaped(p.getUniqueId(), true);

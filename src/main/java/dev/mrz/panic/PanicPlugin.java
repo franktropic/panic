@@ -53,6 +53,13 @@ public final class PanicPlugin extends JavaPlugin {
             world.getSpawnLocation().getBlockZ(),
             config.havenSize);
 
+    if (config.havenBuild) {
+      int floor = HavenBuilder.build(world, haven, config.havenFloor, config.havenBorder);
+      if (floor < 0) {
+        getLogger().warning("Haven build: no surface found; leaving the terrain as-is.");
+      }
+    }
+
     scoreboard = new ScoreboardService();
     alphaManager = new AlphaManager(this);
     dread = new DreadService(this);
