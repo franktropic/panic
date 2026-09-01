@@ -1,18 +1,58 @@
 package dev.mrz.panic;
 
+import java.util.EnumSet;
+import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
 /**
  * Flattens the haven at startup so it reads as a clean, lit, safe room: a solid floor at one level,
- * a glowing border ring on the edge, a glowing center marker, and the ceiling cleared. Runs on the
- * main thread during onEnable; the spawn chunks are loaded by then.
+ * a glowing border ring on the edge, a glowing center marker, the ceiling cleared, and tree
+ * canopies stripped above it so nothing floats over the room. Runs on the main thread during
+ * onEnable; the spawn chunks are loaded by then.
  */
 final class HavenBuilder {
 
   /** Blocks cleared above the floor so the haven has open space under any overhang. */
   private static final int CEILING_BLOCKS = 7;
+
+  /** How far above the cleared ceiling tree material is still stripped. */
+  private static final int TREE_STRIP_BLOCKS = 16;
+
+  /** Tree material stripped above the haven. 26.2 has no Material.isLog()/isLeaves() helper. */
+  private static final Set<Material> TREE_MATERIALS =
+      EnumSet.of(
+          Material.OAK_LEAVES,
+          Material.SPRUCE_LEAVES,
+          Material.BIRCH_LEAVES,
+          Material.JUNGLE_LEAVES,
+          Material.ACACIA_LEAVES,
+          Material.DARK_OAK_LEAVES,
+          Material.MANGROVE_LEAVES,
+          Material.CHERRY_LEAVES,
+          Material.PALE_OAK_LEAVES,
+          Material.OAK_LOG,
+          Material.SPRUCE_LOG,
+          Material.BIRCH_LOG,
+          Material.JUNGLE_LOG,
+          Material.ACACIA_LOG,
+          Material.DARK_OAK_LOG,
+          Material.MANGROVE_LOG,
+          Material.CHERRY_LOG,
+          Material.PALE_OAK_LOG,
+          Material.MANGROVE_ROOTS,
+          Material.OAK_SAPLING,
+          Material.SPRUCE_SAPLING,
+          Material.BIRCH_SAPLING,
+          Material.JUNGLE_SAPLING,
+          Material.ACACIA_SAPLING,
+          Material.DARK_OAK_SAPLING,
+          Material.MANGROVE_PROPAGULE,
+          Material.CHERRY_SAPLING,
+          Material.PALE_OAK_SAPLING,
+          Material.AZALEA,
+          Material.FLOWERING_AZALEA);
 
   private HavenBuilder() {}
 
@@ -48,6 +88,16 @@ final class HavenBuilder {
             continue;
           }
           b.setType(Material.AIR);
+        }
+        // The ceiling clear can cut a tree mid-trunk and leave its canopy floating above the box;
+        // strip tree material higher up so the room always reads clean from above.
+        for (int y = floorY + CEILING_BLOCKS;
+            y < floorY + CEILING_BLOCKS + TREE_STRIP_BLOCKS;
+            y++) {
+          Block b = world.getBlockAt(x, y, z);
+          if (TREE_MATERIALS.contains(b.getType())) {
+            b.setType(Material.AIR);
+          }
         }
       }
     }

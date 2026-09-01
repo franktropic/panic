@@ -38,16 +38,32 @@ Alpha horde roguelike survival for Paper. Night belongs to alpha mobs. Full spec
   from a previous build cannot mask the natural ground (idempotent rebuild). Glow and build are
   config-gated (`alpha.show-glow`). Scoreboard adds `/panic help` + one-life-per-run lines;
   `/panic help` is open to all players, admin subcommands check `panic.admin`.
-  RCON-verified live: floor/ring/ceiling/marker at the spawn surface, outside-ring untouched.
+   RCON-verified live: floor/ring/ceiling/marker at the spawn surface, outside-ring untouched.
+- 2026-09-01: **0.4.4 spawn fortress + world reset.** From the live playtest (world got
+  "bombed up"): haven column is now unbreakable/unplaceable bedrock-to-sky — `BlockBreakEvent`
+  and `BlockPlaceEvent` cancelled in the 24x24 box at all Y, `EntityExplodeEvent` strips box
+  blocks from the blast list (creepers crater the outside but never the room),
+  `EntityChangeBlockEvent` cancelled (endermen). `peaceTick` scan now centers at the surface
+  elevation with a 96-block vertical half-extent (the old y=0 + 32 radius missed the entire
+  surface layer, so the peace ring never actually touched ground mobs). `HavenBuilder` strips
+  tree material (leaves/logs/saplings/azaleas, explicit list — 26.2 `Material` has no
+  isLog/isLeaves helper) 16 blocks above the ceiling clear, killing the floating-canopy
+  "leaf slop" the ceiling cut left behind. Deployed with a world regen (old world backed up as
+  world-backup-20260901-bombed) using the pinned seed
+  `-8089496942705041839` extracted from `world_gen_settings.dat` (26.2 moved the seed out of
+  level.dat, and an empty `level-seed` is random per generation). `gamerule locator_bar false`
+  set post-regen (new-world gamerules reset). RCON-verified live: 12/12 haven probes, locator
+  bar off, live creeper blast left the floor intact and cratered the outside ring.
 
 Build-order status: steps 1-3 done. Next is step 4: stats, corpses, blood moon.
 
 ## Next step
 
-Playtest again with real players (Andryo + Pete) on 0.4.3: gate throttling, alpha stuck
-escalation, respawn safety, and the built haven look/feel.
-Then build-order step 4: RPG stats, corpses, blood moon. Code review of the full polish pass
-is queued on switchboard (task 283f47fa) — apply findings when it lands.
+Playtest again with real players on 0.4.4: spawn protection (try to mine the floor, pop a
+creeper in the room), peace ring at surface elevation, no floating leaves. Re-op Anita + Jash
+on join (new world = no ops). Then build-order step 4: RPG stats, corpses, blood moon. Code
+review of the full polish pass is queued on switchboard (task 283f47fa) — apply findings when
+it lands.
 
 ## NMS recipe (add only when a feature needs it)
 

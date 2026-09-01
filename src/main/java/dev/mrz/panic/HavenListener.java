@@ -13,8 +13,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -24,7 +28,7 @@ import org.bukkit.util.Vector;
 
 /**
  * The spawn haven: one-way exit, re-entry knockback, no mob damage or hunger inside, no monster
- * spawns, basic kit for new players, safe respawn placement.
+ * spawns, an unbreakable bedrock-to-sky column, basic kit for new players, safe respawn placement.
  */
 public final class HavenListener implements Listener {
 
@@ -142,6 +146,36 @@ public final class HavenListener implements Listener {
     }
   }
 
+  /** The haven column is unbreakable and unplaceable, from bedrock to the sky. */
+  @EventHandler
+  public void onBlockBreak(BlockBreakEvent e) {
+    if (plugin.haven().containsBlock(e.getBlock().getX(), e.getBlock().getZ())) {
+      e.setCancelled(true);
+    }
+  }
+
+  @EventHandler
+  public void onBlockPlace(BlockPlaceEvent e) {
+    if (plugin.haven().containsBlock(e.getBlock().getX(), e.getBlock().getZ())) {
+      e.setCancelled(true);
+    }
+  }
+
+  /** Explosions (creepers and friends) still damage entities but cannot break haven blocks. */
+  @EventHandler
+  public void onExplode(EntityExplodeEvent e) {
+    HavenRegion haven = plugin.haven();
+    e.blockList().removeIf(b -> haven.containsBlock(b.getX(), b.getZ()));
+  }
+
+  /** Endermen may not pick up or swap blocks inside the haven column. */
+  @EventHandler
+  public void onEntityChangeBlock(EntityChangeBlockEvent e) {
+    if (plugin.haven().containsBlock(e.getBlock().getX(), e.getBlock().getZ())) {
+      e.setCancelled(true);
+    }
+  }
+
   @EventHandler
   public void onCreatureSpawn(CreatureSpawnEvent e) {
     if (!(e.getEntity() instanceof Monster)) {
@@ -168,9 +202,15 @@ public final class HavenListener implements Listener {
     }
     HavenRegion haven = plugin.haven();
     World world = plugin.world();
-    Location center = new Location(world, haven.centerX() + 0.5, 0, haven.centerZ() + 0.5);
+    // Center the scan at the surface elevation so it covers ground-level mobs, not just a slab
+    // around y=0 (the old fixed y=0 + 32 radius missed the entire surface layer).
+    int surfaceY = SurfaceUtil.findSurface(world, haven.centerX(), haven.centerZ());
+    if (surfaceY < 0) {
+      surfaceY = 0;
+    }
+    Location center = new Location(world, haven.centerX() + 0.5, surfaceY, haven.centerZ() + 0.5);
     double r = plugin.config().peaceRadius;
-    for (Entity e : world.getNearbyEntities(center, r, 32, r)) {
+    for (Entity e : world.getNearbyEntities(center, r, 96, r)) {
       if (e instanceof Monster m) {
         m.setTarget(null);
         // 2s of fire, renewed every second while it stays in the ring.
